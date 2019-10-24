@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static part02.Constants.DEFAULT_DIFFICULTY;
@@ -12,14 +13,14 @@ import static part02.Constants.MIN_TRANSACTION_UNIT;
 
 public class BlockChain {
     private static List<Block> blockChain = new ArrayList<>();
-    private static Map<String, TransOutput> transOutputs = new HashMap<>();
+    private static Map<String, TransOutput> unspentTransOutputs = new HashMap<>();
 
     public static Transaction createInitialTransaction(Wallet sender, Wallet recipient, float value) {
         Transaction transaction = new Transaction(sender, recipient, value);
         TransOutput output = new TransOutput(transaction.getRecipient(), transaction.getValue(), transaction.getTransId());
         transaction.addOutput(output);
 
-        transOutputs.put(transaction.getTransId(), output);
+        putUnspentTransOutput(transaction.getTransId(), output);
         return transaction;
     }
 
@@ -28,22 +29,23 @@ public class BlockChain {
         blockChain.add(block);
     }
 
-    public static TransOutput getTransOutput(String id) {
-        return transOutputs.get(id);
+    public static TransOutput getUnspentTransOutput(String id) {
+        return unspentTransOutputs.get(id);
     }
 
-    public static void putTransOutput(String id, TransOutput transOutput) {
-        transOutputs.put(id, transOutput);
+    public static void putUnspentTransOutput(String id, TransOutput unspentTransOutput) {
+        unspentTransOutputs.put(id, unspentTransOutput);
     }
 
-    public static void removeTransOutput(String id) {
-        transOutputs.remove(id);
+    public static void removeUnspentTransOutput(String id) {
+        unspentTransOutputs.remove(id);
     }
 
     // 잔고 확인 기능
     public static float getBalance(Wallet wallet) {
-        return (float)getMinedTransOutput(wallet.getPublicKey())
+        return (float) unspentTransOutputs.values()
                 .stream()
+                .filter(isMinedTransOutput(wallet.getPublicKey()))
                 .mapToDouble(TransOutput::getValue)
                 .sum();
     }
@@ -63,20 +65,18 @@ public class BlockChain {
     }
 
     private static List<TransInput> generateTransInputs(Wallet sender) {
-        return getMinedTransOutput(sender.getPublicKey())
+        return unspentTransOutputs.values()
                 .stream()
+                .filter(isMinedTransOutput(sender.getPublicKey()))
                 .map(BlockChain::createNewTransInput)
                 .collect(Collectors.toList());
     }
 
-    private static List<TransOutput> getMinedTransOutput(PublicKey publicKey) {
-        return transOutputs.values()
-                            .stream()
-                            .filter(output -> output.mined(publicKey))
-                            .collect(Collectors.toList());
+    private static Predicate<TransOutput> isMinedTransOutput(PublicKey publicKey) {
+        return output -> output.mined(publicKey);
     }
 
     private static TransInput createNewTransInput(TransOutput output) {
-        return new TransInput(output.getId(), transOutputs.get(output.getId()));
+        return new TransInput(output.getId());
     }
 }

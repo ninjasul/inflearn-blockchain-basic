@@ -1,6 +1,5 @@
 package part02;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,8 +8,6 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import static part02.Constants.MIN_TRANSACTION_UNIT;
 
 @Getter
 @Setter
@@ -49,14 +46,7 @@ public class Transaction {
             return false;
         }
 
-        for (TransInput input : inputs) {
-            input.setTransOutput(BlockChain.getTransOutput(input.getTransOutputId()));
-        }
-
-        // 4. TxOutput 100, value: 40, 60
         float leftOver = getInputValueSum() - value;
-
-        //transId = calculateHash();
 
         // 40코인 송신
         addOutput(new TransOutput(recipient, value, transId));
@@ -65,7 +55,7 @@ public class Transaction {
         addOutput(new TransOutput(sender, leftOver, transId));
 
         for (TransOutput output : outputs) {
-            BlockChain.putTransOutput(output.getId(), output);
+            BlockChain.putUnspentTransOutput(output.getId(), output);
         }
 
         for (TransInput input : inputs) {
@@ -73,7 +63,7 @@ public class Transaction {
                 continue;
             }
 
-            BlockChain.removeTransOutput(input.getTransOutput().getId());
+            BlockChain.removeUnspentTransOutput(input.getTransOutput().getId());
         }
 
         return true;

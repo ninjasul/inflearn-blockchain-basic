@@ -9,9 +9,8 @@ public class TransInput {
     private String transOutputId;
     private TransOutput transOutput;
 
-    public TransInput(String transOutputId, TransOutput transOutput) {
+    public TransInput(String transOutputId) {
         this.transOutputId = transOutputId;
-        this.transOutput = transOutput;
     }
 
     public float getOutputValue() {
